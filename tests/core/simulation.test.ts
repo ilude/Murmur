@@ -277,8 +277,6 @@ describe('Simulation', () => {
       sim.step();
       sim.step();
 
-      const timeBefore = sim.currentTime;
-
       sim.reset();
 
       expect(sim.currentTime).toBe(0);

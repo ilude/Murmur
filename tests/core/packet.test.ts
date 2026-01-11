@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   createPacket,
   cloneForForward,
@@ -7,11 +7,6 @@ import {
 } from '@/core/packet';
 
 describe('packet', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2024-01-01T00:00:00Z'));
-  });
-
   describe('createPacket', () => {
     it('should create packet with required fields', () => {
       const payload = new TextEncoder().encode('Hello World');
@@ -41,11 +36,15 @@ describe('packet', () => {
     });
 
     it('should set timestamp', () => {
+      const before = Date.now();
       const payload = new Uint8Array([1, 2, 3]);
       const packet = createPacket('node-a', 'node-b', payload);
+      const after = Date.now();
 
-      expect(packet.header.timestamp).toBe(Date.now());
-      expect(packet.meta.createdAt).toBe(Date.now());
+      expect(packet.header.timestamp).toBeGreaterThanOrEqual(before);
+      expect(packet.header.timestamp).toBeLessThanOrEqual(after);
+      expect(packet.meta.createdAt).toBeGreaterThanOrEqual(before);
+      expect(packet.meta.createdAt).toBeLessThanOrEqual(after);
     });
 
     it('should handle empty payload', () => {

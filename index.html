@@ -287,6 +287,185 @@
         padding: 0;
         line-height: 1;
       }
+
+      /* Node List Panel Styles */
+      .node-list-section {
+        border-top: 1px solid #2a2f4a;
+      }
+
+      .node-list-section h3 {
+        font-size: 0.9rem;
+        color: #667eea;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 1rem 1rem 0.5rem;
+      }
+
+      .node-list-header {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background: #0f1429;
+        border-bottom: 1px solid #2a2f4a;
+      }
+
+      .node-list-count {
+        flex: 1;
+        font-size: 0.875rem;
+        color: #a0a0a0;
+      }
+
+      .node-list-header button {
+        background: none;
+        border: none;
+        color: #667eea;
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 0.25rem;
+        margin-left: 0.25rem;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+
+      .node-list-header button:hover {
+        opacity: 1;
+      }
+
+      .node-list-items {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .node-list-empty {
+        padding: 2rem 1rem;
+        text-align: center;
+        color: #a0a0a0;
+        font-size: 0.875rem;
+      }
+
+      .node-item {
+        border-bottom: 1px solid #2a2f4a;
+      }
+
+      .node-item:last-child {
+        border-bottom: none;
+      }
+
+      .node-item.selected {
+        background: rgba(102, 126, 234, 0.1);
+      }
+
+      .node-item-header {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .node-item-header:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .node-expand-icon {
+        color: #667eea;
+        font-size: 0.7rem;
+        margin-right: 0.5rem;
+        width: 1rem;
+      }
+
+      .node-item-name {
+        flex: 1;
+        font-weight: 500;
+        font-size: 0.875rem;
+      }
+
+      .node-item-status {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #4a4f6a;
+      }
+
+      .node-item-status.active {
+        background: #4ade80;
+      }
+
+      .node-item-details {
+        padding: 0 1rem 1rem 2rem;
+        font-size: 0.8rem;
+      }
+
+      .node-detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.25rem 0;
+        border-bottom: 1px solid #1a1f3a;
+      }
+
+      .node-detail-label {
+        color: #a0a0a0;
+      }
+
+      .node-detail-value {
+        color: #e0e0e0;
+      }
+
+      .node-detail-value.mono {
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 0.75rem;
+      }
+
+      .node-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+      }
+
+      .node-stat {
+        text-align: center;
+        background: #0f1429;
+        padding: 0.5rem 0.25rem;
+        border-radius: 4px;
+      }
+
+      .node-stat-value {
+        display: block;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #667eea;
+      }
+
+      .node-stat-label {
+        display: block;
+        font-size: 0.65rem;
+        color: #a0a0a0;
+        text-transform: uppercase;
+      }
+
+      .node-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+      }
+
+      .btn-sm {
+        padding: 0.35rem 0.5rem;
+        font-size: 0.75rem;
+      }
+
+      .btn-locate, .btn-send {
+        background: #2a2f4a;
+      }
+
+      .btn-delete {
+        background: #3d2a2a;
+      }
+
+      .btn-delete:hover:not(:disabled) {
+        background: #4d2a2a;
+      }
     </style>
   </head>
   <body>
@@ -312,16 +491,21 @@
           <p>Mesh Network Simulator</p>
         </div>
         <div id="controls"></div>
+        <div class="node-list-section">
+          <h3>Nodes</h3>
+          <div id="node-list"></div>
+        </div>
       </div>
     </div>
 
     <script type="module">
-      import { Simulation } from './src/core/simulation.js';
-      import { createFloodingStrategy } from './src/core/routing/flooding.js';
-      import { SimulationMap } from './src/ui/map.js';
-      import { NodeLayer } from './src/ui/node-layer.js';
-      import { PacketAnimation } from './src/ui/packet-animation.js';
-      import { Controls } from './src/ui/controls.js';
+      import { Simulation } from './src/core/simulation.ts';
+      import { createFloodingStrategy } from './src/core/routing/flooding.ts';
+      import { SimulationMap } from './src/ui/map.ts';
+      import { NodeLayer } from './src/ui/node-layer.ts';
+      import { PacketAnimation } from './src/ui/packet-animation.ts';
+      import { Controls } from './src/ui/controls.ts';
+      import { NodeListPanel } from './src/ui/node-list-panel.ts';
 
       // Initialize simulation
       const simulation = new Simulation({
@@ -334,7 +518,7 @@
       // Initialize map
       const simMap = new SimulationMap(simulation, {
         containerId: 'map',
-        center: [47.6062, -122.3321], // Seattle
+        center: [40.8612, -79.8953], // Butler, PA
         zoom: 12,
       });
 
@@ -349,6 +533,11 @@
       // Initialize controls
       const controls = new Controls(simulation, nodeLayer, {
         containerId: 'controls',
+      });
+
+      // Initialize node list panel
+      const nodeListPanel = new NodeListPanel(simulation, nodeLayer, {
+        containerId: 'node-list',
       });
 
       // Handle map clicks to add nodes
@@ -370,9 +559,9 @@
 
       // Add a few initial nodes to get started
       const initialNodes = [
-        { lat: 47.6062, lng: -122.3321 }, // Downtown Seattle
-        { lat: 47.6205, lng: -122.3493 }, // Capitol Hill
-        { lat: 47.6588, lng: -122.3121 }, // University District
+        { lat: 40.8612, lng: -79.8953 }, // Downtown Butler
+        { lat: 40.8750, lng: -79.9150 }, // North Butler
+        { lat: 40.8480, lng: -79.8750 }, // East Butler
       ];
 
       for (let i = 0; i < initialNodes.length; i++) {
@@ -397,6 +586,7 @@
         nodeLayer,
         packetAnimation,
         controls,
+        nodeListPanel,
       };
 
       console.log('%cGhostwave loaded!', 'color: #667eea; font-size: 18px; font-weight: bold;');
