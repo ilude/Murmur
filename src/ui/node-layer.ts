@@ -273,4 +273,20 @@ export class NodeLayer {
 
     return null;
   }
+
+  /**
+   * Center map on a specific node
+   */
+  centerOnNode(nodeId: string): void {
+    const node = this.simulation.getNode(nodeId);
+    if (node) {
+      this.simMap.getMap().setView([node.position.lat, node.position.lng], 14);
+      this.highlightNode(nodeId);
+
+      // Reset highlight after delay
+      setTimeout(() => {
+        this.resetNodeHighlight(nodeId);
+      }, 2000);
+    }
+  }
 }
