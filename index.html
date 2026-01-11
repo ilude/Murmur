@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ghostwave - Mesh Network Simulator</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
     <style>
       * {
         margin: 0;
@@ -16,250 +20,387 @@
           Oxygen, Ubuntu, Cantarell, sans-serif;
         background: #0a0e27;
         color: #e0e0e0;
-        padding: 2rem;
+        overflow: hidden;
       }
 
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
+      .app-container {
+        display: flex;
+        height: 100vh;
       }
 
-      h1 {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-
-      .subtitle {
-        font-size: 1.2rem;
-        color: #a0a0a0;
-        margin-bottom: 2rem;
-      }
-
-      .card {
-        background: #1a1f3a;
-        border-radius: 12px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-      }
-
-      .card h2 {
-        margin-bottom: 1rem;
-        color: #667eea;
-      }
-
-      code {
-        background: #0f1429;
-        padding: 0.2rem 0.5rem;
-        border-radius: 4px;
-        font-family: 'Monaco', 'Menlo', monospace;
-        font-size: 0.9rem;
-      }
-
-      pre {
-        background: #0f1429;
-        padding: 1rem;
-        border-radius: 8px;
-        overflow-x: auto;
-        margin: 1rem 0;
-      }
-
-      pre code {
-        padding: 0;
-        background: none;
-      }
-
-      .feature-list {
-        list-style: none;
-        padding: 0;
-      }
-
-      .feature-list li {
-        padding: 0.5rem 0;
-        padding-left: 1.5rem;
+      .map-container {
+        flex: 1;
         position: relative;
       }
 
-      .feature-list li:before {
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      .sidebar {
+        width: 350px;
+        background: #1a1f3a;
+        overflow-y: auto;
+        box-shadow: -4px 0 8px rgba(0, 0, 0, 0.3);
+      }
+
+      .header {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .header h1 {
+        font-size: 1.8rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .header p {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+
+      .controls-panel {
+        padding: 1rem;
+      }
+
+      .control-section {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #2a2f4a;
+      }
+
+      .control-section:last-child {
+        border-bottom: none;
+      }
+
+      .control-section h3 {
+        font-size: 0.9rem;
+        color: #667eea;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.75rem;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 0.5rem 1rem;
+        background: #2a2f4a;
+        border: none;
+        border-radius: 6px;
+        color: #e0e0e0;
+        cursor: pointer;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn:hover:not(:disabled) {
+        background: #3a3f5a;
+        transform: translateY(-1px);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        background: linear-gradient(135deg, #7a8ff0 0%, #8659b0 100%);
+      }
+
+      .btn-danger {
+        background: #ef4444;
+      }
+
+      .btn-danger:hover:not(:disabled) {
+        background: #dc2626;
+      }
+
+      .icon {
+        font-size: 0.9rem;
+      }
+
+      .speed-control {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      #speed-slider {
+        flex: 1;
+        height: 4px;
+        background: #2a2f4a;
+        border-radius: 2px;
+        outline: none;
+        -webkit-appearance: none;
+      }
+
+      #speed-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        background: #667eea;
+        border-radius: 50%;
+        cursor: pointer;
+      }
+
+      #speed-slider::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        background: #667eea;
+        border-radius: 50%;
+        cursor: pointer;
+        border: none;
+      }
+
+      #speed-label {
+        min-width: 40px;
+        font-weight: 600;
+        color: #667eea;
+      }
+
+      .checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .checkbox-group label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        font-size: 0.875rem;
+      }
+
+      .checkbox-group input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+      }
+
+      .stat-item {
+        background: #0f1429;
+        padding: 0.75rem;
+        border-radius: 6px;
+        text-align: center;
+      }
+
+      .stat-label {
+        display: block;
+        font-size: 0.75rem;
+        color: #a0a0a0;
+        margin-bottom: 0.25rem;
+      }
+
+      .stat-value {
+        display: block;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #667eea;
+      }
+
+      .info-panel {
+        background: #0f1429;
+        padding: 0.75rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        color: #a0a0a0;
+        line-height: 1.4;
+      }
+
+      /* Leaflet popup styling */
+      .leaflet-popup-content-wrapper {
+        background: #1a1f3a;
+        color: #e0e0e0;
+      }
+
+      .leaflet-popup-tip {
+        background: #1a1f3a;
+      }
+
+      /* Instructions overlay */
+      .instructions {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(26, 31, 58, 0.95);
+        padding: 1rem;
+        border-radius: 8px;
+        max-width: 300px;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      .instructions h3 {
+        color: #667eea;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+      }
+
+      .instructions ul {
+        list-style: none;
+        padding: 0;
+        font-size: 0.875rem;
+        line-height: 1.6;
+      }
+
+      .instructions li {
+        padding: 0.25rem 0;
+        padding-left: 1rem;
+        position: relative;
+      }
+
+      .instructions li:before {
         content: '▹';
         position: absolute;
         left: 0;
         color: #667eea;
       }
 
-      .button {
-        display: inline-block;
-        padding: 0.75rem 1.5rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        text-decoration: none;
-        border-radius: 6px;
-        font-weight: 600;
-        transition: transform 0.2s;
-      }
-
-      .button:hover {
-        transform: translateY(-2px);
-      }
-
-      .stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-top: 1rem;
-      }
-
-      .stat {
-        background: #0f1429;
-        padding: 1rem;
-        border-radius: 8px;
-        text-align: center;
-      }
-
-      .stat-value {
-        font-size: 2rem;
-        font-weight: bold;
-        color: #667eea;
-      }
-
-      .stat-label {
-        font-size: 0.9rem;
+      .close-instructions {
+        float: right;
+        background: none;
+        border: none;
         color: #a0a0a0;
-        margin-top: 0.5rem;
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0;
+        line-height: 1;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <h1>Ghostwave</h1>
-      <p class="subtitle">
-        TypeScript-based Mesh Network Simulator for LoRa/Meshtastic-style Networks
-      </p>
-
-      <div class="card">
-        <h2>About</h2>
-        <p>
-          Ghostwave is a discrete-event simulator that allows virtual LoRa/Meshtastic-style
-          nodes to be placed on a map and exchange messages using realistic radio propagation
-          simulation. This is NOT a hardware emulator — it simulates network behavior at the
-          protocol level.
-        </p>
-      </div>
-
-      <div class="card">
-        <h2>Features</h2>
-        <ul class="feature-list">
-          <li>Isomorphic TypeScript core (Node.js & Browser)</li>
-          <li>Realistic RF propagation with path loss models</li>
-          <li>Grid-based geographic addressing system</li>
-          <li>Simple flooding routing protocol</li>
-          <li>Deterministic simulation with seeded PRNG</li>
-          <li>Event-driven architecture</li>
-          <li>Comprehensive test coverage (>90%)</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <h2>Quick Start</h2>
-        <pre><code>import { Simulation, createFloodingStrategy } from 'ghostwave';
-
-// Create simulation
-const sim = new Simulation({
-  seed: 12345,
-  tickInterval: 100,
-  realtime: false,
-});
-
-// Add nodes
-const nodeA = sim.addNode({
-  id: 'node-a',
-  position: { lat: 47.6062, lng: -122.3321 },
-  radioRange: 10,
-  txPower: 20,
-  dutyCycle: 0.1,
-});
-
-const nodeB = sim.addNode({
-  id: 'node-b',
-  position: { lat: 47.6092, lng: -122.3421 },
-  radioRange: 10,
-  txPower: 20,
-  dutyCycle: 0.1,
-});
-
-// Set routing strategy
-nodeA.setRoutingStrategy(createFloodingStrategy());
-nodeB.setRoutingStrategy(createFloodingStrategy());
-
-// Listen for events
-sim.on('packet:delivered', ({ packet, hops, latency }) => {
-  console.log(`Delivered in ${hops} hops, ${latency}ms`);
-});
-
-// Send message
-sim.injectPacket('node-a', 'node-b', new TextEncoder().encode('Hello!'));
-
-// Run simulation
-sim.step();</code></pre>
-      </div>
-
-      <div class="card">
-        <h2>Test Coverage</h2>
-        <div class="stats">
-          <div class="stat">
-            <div class="stat-value">90%+</div>
-            <div class="stat-label">Code Coverage</div>
-          </div>
-          <div class="stat">
-            <div class="stat-value">100+</div>
-            <div class="stat-label">Test Cases</div>
-          </div>
-          <div class="stat">
-            <div class="stat-value">9</div>
-            <div class="stat-label">Core Modules</div>
-          </div>
-          <div class="stat">
-            <div class="stat-value">0</div>
-            <div class="stat-label">Dependencies</div>
-          </div>
+    <div class="app-container">
+      <div class="map-container">
+        <div id="map"></div>
+        <div class="instructions" id="instructions">
+          <button class="close-instructions" onclick="document.getElementById('instructions').style.display='none'">×</button>
+          <h3>Quick Start</h3>
+          <ul>
+            <li>Click on the map to add nodes</li>
+            <li>Nodes auto-connect within radio range</li>
+            <li>Use "Broadcast Test" to send packets</li>
+            <li>Watch packets propagate through the mesh</li>
+            <li>Press Play to run continuous simulation</li>
+          </ul>
         </div>
       </div>
 
-      <div class="card">
-        <h2>Architecture</h2>
-        <ul class="feature-list">
-          <li><strong>VirtualNode:</strong> Simulated mesh network node with radio and routing</li>
-          <li><strong>RadioMedium:</strong> RF propagation simulation with path loss models</li>
-          <li><strong>Packet:</strong> Message serialization and forwarding logic</li>
-          <li><strong>Simulation:</strong> Discrete-event engine with event scheduling</li>
-          <li><strong>Addressing:</strong> Geographic coordinate to mesh address mapping</li>
-          <li><strong>Routing:</strong> Pluggable routing strategies (flooding, etc.)</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <h2>Development</h2>
-        <pre><code># Install dependencies
-pnpm install
-
-# Run tests
-pnpm test
-
-# Run tests with coverage
-pnpm test:coverage
-
-# Build
-pnpm build</code></pre>
+      <div class="sidebar">
+        <div class="header">
+          <h1>Ghostwave</h1>
+          <p>Mesh Network Simulator</p>
+        </div>
+        <div id="controls"></div>
       </div>
     </div>
 
     <script type="module">
-      console.log('%cGhostwave', 'color: #667eea; font-size: 24px; font-weight: bold;');
-      console.log('Mesh Network Simulator loaded. Check out the code at https://github.com/ghostwave');
+      import { Simulation } from './src/core/simulation.js';
+      import { createFloodingStrategy } from './src/core/routing/flooding.js';
+      import { SimulationMap } from './src/ui/map.js';
+      import { NodeLayer } from './src/ui/node-layer.js';
+      import { PacketAnimation } from './src/ui/packet-animation.js';
+      import { Controls } from './src/ui/controls.js';
+
+      // Initialize simulation
+      const simulation = new Simulation({
+        seed: Date.now(),
+        tickInterval: 100,
+        realtime: true,
+        realtimeMultiplier: 1,
+      });
+
+      // Initialize map
+      const simMap = new SimulationMap(simulation, {
+        containerId: 'map',
+        center: [47.6062, -122.3321], // Seattle
+        zoom: 12,
+      });
+
+      // Initialize layers
+      const nodeLayer = new NodeLayer(simulation, simMap, {
+        showConnections: true,
+        showRadioRange: false,
+      });
+
+      const packetAnimation = new PacketAnimation(simulation, simMap);
+
+      // Initialize controls
+      const controls = new Controls(simulation, nodeLayer, {
+        containerId: 'controls',
+      });
+
+      // Handle map clicks to add nodes
+      let nodeCounter = 0;
+      simMap.onMapClick((lat, lng) => {
+        const node = simulation.addNode({
+          id: `node-${nodeCounter++}`,
+          position: { lat, lng },
+          radioRange: 5, // 5km range
+          txPower: 20,
+          dutyCycle: 0.1,
+        });
+
+        node.setRoutingStrategy(createFloodingStrategy());
+        nodeLayer.updateConnections();
+
+        controls.showInfo(`Added ${node.id} at ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+      });
+
+      // Add a few initial nodes to get started
+      const initialNodes = [
+        { lat: 47.6062, lng: -122.3321 }, // Downtown Seattle
+        { lat: 47.6205, lng: -122.3493 }, // Capitol Hill
+        { lat: 47.6588, lng: -122.3121 }, // University District
+      ];
+
+      for (let i = 0; i < initialNodes.length; i++) {
+        const pos = initialNodes[i];
+        const node = simulation.addNode({
+          id: `node-${nodeCounter++}`,
+          position: pos,
+          radioRange: 5,
+          txPower: 20,
+          dutyCycle: 0.1,
+        });
+        node.setRoutingStrategy(createFloodingStrategy());
+      }
+
+      nodeLayer.updateConnections();
+      simMap.fitToNodes();
+
+      // Make simulation accessible from console
+      window.ghostwave = {
+        simulation,
+        simMap,
+        nodeLayer,
+        packetAnimation,
+        controls,
+      };
+
+      console.log('%cGhostwave loaded!', 'color: #667eea; font-size: 18px; font-weight: bold;');
+      console.log('Access via window.ghostwave object');
     </script>
   </body>
 </html>
