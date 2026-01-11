@@ -1,4 +1,4 @@
-# Ghostwave - Mesh Network Simulator
+# Murmur - Mesh Network Simulator
 
 A TypeScript-based mesh network simulator for LoRa/Meshtastic-style networks with realistic RF propagation.
 
@@ -101,10 +101,10 @@ make info           # Show project information
 
 ## 💻 Programmatic API Usage
 
-If you want to use Ghostwave as a library (without the UI):
+If you want to use Murmur as a library (without the UI):
 
 ```typescript
-import { Simulation, createFloodingStrategy } from 'ghostwave';
+import { Simulation, createFloodingStrategy } from 'murmur';
 
 // Create simulation
 const sim = new Simulation({
@@ -189,7 +189,7 @@ pnpm type-check
 ## Project Structure
 
 ```
-ghostwave/
+murmur/
 ├── src/
 │   ├── core/               # Core simulation engine
 │   │   ├── node.ts

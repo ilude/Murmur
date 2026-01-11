@@ -1,5 +1,5 @@
 {
-  "name": "ghostwave",
+  "name": "murmur",
   "version": "0.1.0",
   "description": "Mesh network simulator for LoRa/Meshtastic-style networks",
   "type": "module",

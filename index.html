@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ghostwave - Mesh Network Simulator</title>
+    <title>Murmur - Mesh Network Simulator</title>
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -486,7 +486,7 @@
 
       <div class="sidebar">
         <div class="header">
-          <h1>Ghostwave</h1>
+          <h1>Murmur</h1>
           <p>Mesh Network Simulator</p>
         </div>
         <div id="controls"></div>
@@ -576,7 +576,7 @@
       simMap.fitToNodes();
 
       // Make simulation accessible from console
-      window.ghostwave = {
+      window.murmur = {
         simulation,
         simMap,
         nodeLayer,
@@ -585,8 +585,8 @@
         nodeListPanel,
       };
 
-      console.log('%cGhostwave loaded!', 'color: #667eea; font-size: 18px; font-weight: bold;');
-      console.log('Access via window.ghostwave object');
+      console.log('%cMurmur loaded!', 'color: #667eea; font-size: 18px; font-weight: bold;');
+      console.log('Access via window.murmur object');
     </script>
   </body>
 </html>

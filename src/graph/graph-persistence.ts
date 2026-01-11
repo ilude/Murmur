@@ -33,7 +33,7 @@ export interface GraphPersistenceConfig {
 }
 
 const DEFAULT_CONFIG: GraphPersistenceConfig = {
-  dbName: 'ghostwave',
+  dbName: 'murmur',
   version: 1,
 };
 
@@ -42,7 +42,7 @@ interface DexieOptions {
   IDBKeyRange?: typeof IDBKeyRange;
 }
 
-class GhostwaveDatabase extends Dexie {
+class MurmurDatabase extends Dexie {
   nodes!: Table<StoredNode, string>;
   links!: Table<StoredLink, string>;
 
@@ -57,7 +57,7 @@ class GhostwaveDatabase extends Dexie {
 }
 
 export class GraphPersistence {
-  private db: GhostwaveDatabase;
+  private db: MurmurDatabase;
   private config: GraphPersistenceConfig;
 
   constructor(config: Partial<GraphPersistenceConfig> = {}) {
@@ -69,7 +69,7 @@ export class GraphPersistence {
     if (this.config.IDBKeyRange) {
       dexieOptions.IDBKeyRange = this.config.IDBKeyRange;
     }
-    this.db = new GhostwaveDatabase(
+    this.db = new MurmurDatabase(
       this.config.dbName,
       Object.keys(dexieOptions).length > 0 ? dexieOptions : undefined
     );

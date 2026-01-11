@@ -1,5 +1,5 @@
 /**
- * Leaflet map integration for Ghostwave simulator
+ * Leaflet map integration for Murmur simulator
  */
 
 import L from 'leaflet';

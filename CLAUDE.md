@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Ghostwave is a TypeScript mesh network simulator for LoRa/Meshtastic-style networks. It features realistic RF propagation simulation with an interactive Leaflet-based map UI.
+Murmur is a TypeScript mesh network simulator for LoRa/Meshtastic-style networks. It features realistic RF propagation simulation with an interactive Leaflet-based map UI.
 
 ## Commands
 

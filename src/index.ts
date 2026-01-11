@@ -1,5 +1,5 @@
 /**
- * Ghostwave - Mesh Network Simulator
+ * Murmur - Mesh Network Simulator
  * Main entry point
  */
 
