@@ -21,7 +21,7 @@ export interface PacketAnimationConfig {
 const DEFAULT_CONFIG: PacketAnimationConfig = {
   showTransmissions: true,
   showPaths: true,
-  animationDuration: 800,
+  animationDuration: 1500, // Slower animation
   transmissionColor: '#667eea',
   deliveredColor: '#4ade80',
   droppedColor: '#ef4444',
@@ -38,7 +38,10 @@ function injectAnimationStyles(): void {
     @keyframes packet-ripple {
       0% {
         transform: translate(-50%, -50%) scale(0);
-        opacity: 0.6;
+        opacity: 1;
+      }
+      70% {
+        opacity: 0.7;
       }
       100% {
         transform: translate(-50%, -50%) scale(1);
@@ -114,8 +117,9 @@ export class PacketAnimation {
       <div class="packet-ripple" style="
         width: ${size}px;
         height: ${size}px;
-        background: radial-gradient(circle, ${this.config.transmissionColor}40 0%, ${this.config.transmissionColor}00 70%);
-        border: 2px solid ${this.config.transmissionColor};
+        background: radial-gradient(circle, ${this.config.transmissionColor}80 0%, ${this.config.transmissionColor}30 50%, ${this.config.transmissionColor}00 70%);
+        border: 3px solid ${this.config.transmissionColor};
+        box-shadow: 0 0 10px ${this.config.transmissionColor}80;
         animation: packet-ripple ${this.config.animationDuration}ms ease-out forwards;
       "></div>
     `;
