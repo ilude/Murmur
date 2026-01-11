@@ -1,5 +1,6 @@
 /**
  * Packet transmission animation layer
+ * Uses CSS animations for smooth GPU-accelerated rendering
  */
 
 import L from 'leaflet';
@@ -20,24 +21,47 @@ export interface PacketAnimationConfig {
 const DEFAULT_CONFIG: PacketAnimationConfig = {
   showTransmissions: true,
   showPaths: true,
-  animationDuration: 500,
+  animationDuration: 800,
   transmissionColor: '#667eea',
   deliveredColor: '#4ade80',
   droppedColor: '#ef4444',
 };
 
-interface AnimationState {
-  circle: L.Circle;
-  startTime: number;
-  duration: number;
+// Inject CSS animation styles once
+let stylesInjected = false;
+function injectAnimationStyles(): void {
+  if (stylesInjected) return;
+  stylesInjected = true;
+
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes packet-ripple {
+      0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0.6;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+      }
+    }
+    .packet-ripple {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      pointer-events: none;
+      will-change: transform, opacity;
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 export class PacketAnimation {
   private simulation: Simulation;
   private simMap: SimulationMap;
   private config: PacketAnimationConfig;
-  private animations: Map<string, AnimationState> = new Map();
-  private animationFrame: number | undefined;
+  private activeMarkers: Set<L.Marker> = new Set();
 
   constructor(
     simulation: Simulation,
@@ -48,6 +72,7 @@ export class PacketAnimation {
     this.simMap = simMap;
     this.config = { ...DEFAULT_CONFIG, ...config };
 
+    injectAnimationStyles();
     this.setupEventListeners();
   }
 
@@ -75,77 +100,42 @@ export class PacketAnimation {
   }
 
   /**
-   * Animate packet transmission as expanding circle
+   * Animate packet transmission using CSS animations (GPU-accelerated)
    */
-  private animateTransmission(sender: VirtualNode, packet: Packet): void {
-    const circle = L.circle([sender.position.lat, sender.position.lng], {
-      radius: 100,
-      fillColor: this.config.transmissionColor,
-      color: this.config.transmissionColor,
-      weight: 2,
-      opacity: 1,
-      fillOpacity: 0.3,
+  private animateTransmission(sender: VirtualNode, _packet: Packet): void {
+    // Calculate pixel size based on zoom level for consistent visual size
+    const map = this.simMap.getMap();
+    const zoom = map.getZoom();
+    const baseSize = 300; // Base size in pixels at zoom 13
+    const size = baseSize * Math.pow(2, zoom - 13);
+
+    // Create a div icon with CSS animation
+    const rippleHtml = `
+      <div class="packet-ripple" style="
+        width: ${size}px;
+        height: ${size}px;
+        background: radial-gradient(circle, ${this.config.transmissionColor}40 0%, ${this.config.transmissionColor}00 70%);
+        border: 2px solid ${this.config.transmissionColor};
+        animation: packet-ripple ${this.config.animationDuration}ms ease-out forwards;
+      "></div>
+    `;
+
+    const icon = L.divIcon({
+      html: rippleHtml,
+      className: '', // Remove default leaflet styling
+      iconSize: [0, 0],
+      iconAnchor: [0, 0],
     });
 
-    circle.addTo(this.simMap.getLayer('packets'));
+    const marker = L.marker([sender.position.lat, sender.position.lng], { icon });
+    marker.addTo(this.simMap.getLayer('packets'));
+    this.activeMarkers.add(marker);
 
-    const animationId = `${packet.header.id}-${Date.now()}`;
-    this.animations.set(animationId, {
-      circle,
-      startTime: Date.now(),
-      duration: this.config.animationDuration,
-    });
-
-    // Start animation loop if not running
-    if (!this.animationFrame) {
-      this.startAnimationLoop();
-    }
-  }
-
-  /**
-   * Start the animation loop
-   */
-  private startAnimationLoop(): void {
-    const animate = () => {
-      const now = Date.now();
-      const toRemove: string[] = [];
-
-      for (const [id, state] of this.animations) {
-        const elapsed = now - state.startTime;
-        const progress = Math.min(elapsed / state.duration, 1);
-
-        // Update circle
-        const maxRadius = 5000; // 5km in meters
-        const radius = progress * maxRadius;
-        const opacity = 1 - progress;
-
-        state.circle.setRadius(radius);
-        state.circle.setStyle({
-          opacity: opacity,
-          fillOpacity: opacity * 0.3,
-        });
-
-        // Remove if animation complete
-        if (progress >= 1) {
-          state.circle.remove();
-          toRemove.push(id);
-        }
-      }
-
-      // Clean up completed animations
-      for (const id of toRemove) {
-        this.animations.delete(id);
-      }
-
-      // Continue loop if animations remain
-      if (this.animations.size > 0) {
-        this.animationFrame = requestAnimationFrame(animate);
-      } else {
-        this.animationFrame = undefined;
-      }
-    };
-
-    this.animationFrame = requestAnimationFrame(animate);
+    // Remove marker after animation completes
+    setTimeout(() => {
+      marker.remove();
+      this.activeMarkers.delete(marker);
+    }, this.config.animationDuration + 50);
   }
 
   /**
@@ -194,20 +184,14 @@ export class PacketAnimation {
    * Clear all animations
    */
   clear(): void {
-    // Remove all animation circles
-    for (const state of this.animations.values()) {
-      state.circle.remove();
+    // Remove all active markers
+    for (const marker of this.activeMarkers) {
+      marker.remove();
     }
-    this.animations.clear();
+    this.activeMarkers.clear();
 
     // Clear packet layer
     this.simMap.clearLayer('packets');
-
-    // Stop animation loop
-    if (this.animationFrame) {
-      cancelAnimationFrame(this.animationFrame);
-      this.animationFrame = undefined;
-    }
   }
 
   /**
