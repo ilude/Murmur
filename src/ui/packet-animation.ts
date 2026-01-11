@@ -12,7 +12,7 @@ import type { SimulationMap } from './map.js';
 export interface PacketAnimationConfig {
   showTransmissions: boolean;
   showPaths: boolean;
-  animationDuration: number; // ms
+  waveSpeedMs: number; // Time for wave to travel full radio range (syncs with simulation)
   transmissionColor: string;
   deliveredColor: string;
   droppedColor: string;
@@ -21,7 +21,7 @@ export interface PacketAnimationConfig {
 const DEFAULT_CONFIG: PacketAnimationConfig = {
   showTransmissions: true,
   showPaths: true,
-  animationDuration: 1500, // Slower animation
+  waveSpeedMs: 800, // Matches simulation.config.waveSpeedMs
   transmissionColor: '#667eea',
   deliveredColor: '#4ade80',
   droppedColor: '#ef4444',
@@ -105,13 +105,31 @@ export class PacketAnimation {
 
   /**
    * Animate packet transmission using CSS animations (GPU-accelerated)
+   * Animation size matches sender's radio range, duration syncs with propagation timing
    */
   private animateTransmission(sender: VirtualNode, _packet: Packet): void {
-    // Calculate pixel size based on zoom level for consistent visual size
     const map = this.simMap.getMap();
-    const zoom = map.getZoom();
-    const baseSize = 300; // Base size in pixels at zoom 13
-    const size = baseSize * Math.pow(2, zoom - 13);
+
+    // Calculate pixel size based on sender's actual radio range
+    // Convert radio range (km) to pixels at current zoom
+    const center = L.latLng(sender.position.lat, sender.position.lng);
+    const radioRangeKm = sender.config.radioRange;
+
+    // Get a point at radioRange distance to calculate pixel size
+    // Move east by radioRange km (approximate)
+    const kmPerDegLng = 111.32 * Math.cos((sender.position.lat * Math.PI) / 180);
+    const edgePoint = L.latLng(
+      sender.position.lat,
+      sender.position.lng + radioRangeKm / kmPerDegLng
+    );
+
+    const centerPixel = map.latLngToContainerPoint(center);
+    const edgePixel = map.latLngToContainerPoint(edgePoint);
+    const radiusPixels = Math.abs(edgePixel.x - centerPixel.x);
+    const size = radiusPixels * 2;
+
+    // Animation duration matches simulation wave speed
+    const animationDuration = this.config.waveSpeedMs;
 
     // Create a div icon with CSS animation
     const rippleHtml = `
@@ -121,7 +139,7 @@ export class PacketAnimation {
         background: radial-gradient(circle, ${this.config.transmissionColor}80 0%, ${this.config.transmissionColor}30 50%, ${this.config.transmissionColor}00 70%);
         border: 3px solid ${this.config.transmissionColor};
         box-shadow: 0 0 10px ${this.config.transmissionColor}80;
-        animation: packet-ripple ${this.config.animationDuration}ms ease-out forwards;
+        animation: packet-ripple ${animationDuration}ms ease-out forwards;
       "></div>
     `;
 
@@ -140,7 +158,7 @@ export class PacketAnimation {
     setTimeout(() => {
       marker.remove();
       this.activeMarkers.delete(marker);
-    }, this.config.animationDuration + 50);
+    }, animationDuration + 50);
   }
 
   /**

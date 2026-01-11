@@ -7,7 +7,7 @@ import { createSeededRandom, type SeededRandom } from '../utils/random.js';
 import { VirtualNode, type NodeConfig } from './node.js';
 import { RadioMedium, type RadioMediumConfig } from './radio-medium.js';
 import type { Packet } from './packet.js';
-import type { LatLng } from '../utils/geo.js';
+import { haversineDistance, type LatLng } from '../utils/geo.js';
 import {
   LinkGraph,
   LinkPrecomputer,
@@ -26,6 +26,7 @@ export interface SimulationConfig {
   enableGraph?: boolean;       // Enable link graph precomputation
   graphConfig?: GraphConfig;
   syncMode?: boolean;          // Synchronous mode (for testing, no animation delays)
+  waveSpeedMs?: number;        // Time in ms for radio wave to travel full radio range (visual sync)
 }
 
 export interface NetworkTopology {
@@ -64,6 +65,7 @@ export type SimulationEvents = {
 const DEFAULT_CONFIG: SimulationConfig = {
   seed: Date.now(),
   enableGraph: false,
+  waveSpeedMs: 800, // Animation takes 800ms to expand to radio range
 };
 
 export class Simulation extends TypedEventEmitter<SimulationEvents> {
@@ -161,7 +163,7 @@ export class Simulation extends TypedEventEmitter<SimulationEvents> {
 
     // Deliver to receiving nodes immediately (they decide whether to forward)
     for (const { node, rssi } of result.reachedNodes) {
-      this.receivePacket(node, packet, rssi);
+      this.receivePacket(sender, node, packet, rssi);
     }
 
     // Schedule forwarding with delay for visual cascade effect
@@ -195,11 +197,28 @@ export class Simulation extends TypedEventEmitter<SimulationEvents> {
    * Deliver packet to a receiving node
    */
   private receivePacket(
+    sender: VirtualNode,
     receiver: VirtualNode,
     packet: Packet,
     rssi: number
   ): void {
+    const outboxLengthBefore = receiver.outbox.length;
     receiver.receive(packet, rssi);
+
+    // Calculate distance-based delay for any new packets in outbox
+    // This syncs forwarding with the visual wave animation
+    if (receiver.outbox.length > outboxLengthBefore) {
+      const distance = haversineDistance(sender.position, receiver.position);
+      const waveSpeedMs = this.config.waveSpeedMs ?? 800;
+      // Delay = time for wave to travel from sender to receiver
+      // Wave travels sender's radioRange in waveSpeedMs
+      const delayMs = Math.round((distance / sender.config.radioRange) * waveSpeedMs);
+
+      // Update delay on newly added packets
+      for (let i = outboxLengthBefore; i < receiver.outbox.length; i++) {
+        receiver.outbox[i]!.meta.forwardDelay = delayMs;
+      }
+    }
 
     this.emit('packet:received', { packet, receiver, rssi });
 
