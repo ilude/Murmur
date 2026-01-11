@@ -108,18 +108,6 @@ describe('FloodingStrategy', () => {
     });
   });
 
-  describe('onTick', () => {
-    it('should not perform any action on tick', () => {
-      const strategy = createFloodingStrategy();
-      const node = createTestNode('test-node');
-
-      // Should not throw
-      expect(() => {
-        strategy.onTick(node, 100);
-      }).not.toThrow();
-    });
-  });
-
   describe('configuration', () => {
     it('should use custom configuration', () => {
       const strategy = createFloodingStrategy({

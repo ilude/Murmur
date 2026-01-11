@@ -5,7 +5,7 @@ import { createFloodingStrategy } from '@/core/routing/flooding';
 describe('Integration Tests', () => {
   describe('simple delivery', () => {
     it('should deliver packet between two nodes in range', () => {
-      const sim = new Simulation({ seed: 12345, realtime: false });
+      const sim = new Simulation({ seed: 12345, syncMode: true });
 
       const nodeA = sim.addNode({
         id: 'node-a',
@@ -31,7 +31,6 @@ describe('Integration Tests', () => {
       });
 
       sim.injectPacket('node-a', 'node-b', new TextEncoder().encode('Hello'));
-      sim.step();
 
       expect(delivered).toBe(true);
       expect(nodeB.inbox.length).toBeGreaterThan(0);
@@ -40,7 +39,7 @@ describe('Integration Tests', () => {
     it('should not deliver if nodes out of range', () => {
       const sim = new Simulation({
         seed: 12345,
-        realtime: false,
+        syncMode: true,
         radioMediumConfig: { rxSensitivity: -100 }, // Less sensitive
       });
 
@@ -63,7 +62,6 @@ describe('Integration Tests', () => {
       nodeB.setRoutingStrategy(createFloodingStrategy());
 
       sim.injectPacket('node-a', 'node-b', new TextEncoder().encode('Hello'));
-      sim.step();
 
       expect(nodeB.inbox.length).toBe(0);
     });
@@ -71,7 +69,7 @@ describe('Integration Tests', () => {
 
   describe('multi-hop delivery', () => {
     it('should deliver packet through intermediate nodes', () => {
-      const sim = new Simulation({ seed: 12345, realtime: false });
+      const sim = new Simulation({ seed: 12345, syncMode: true });
 
       // Create a chain of nodes
       const nodeA = sim.addNode({
@@ -107,11 +105,6 @@ describe('Integration Tests', () => {
 
       sim.injectPacket('node-a', 'node-c', new TextEncoder().encode('Hello'));
 
-      // Run multiple steps to allow forwarding
-      for (let i = 0; i < 10; i++) {
-        sim.step();
-      }
-
       expect(nodeC.inbox.length).toBeGreaterThan(0);
       expect(deliveredHops).toBeGreaterThan(0);
     });
@@ -119,7 +112,7 @@ describe('Integration Tests', () => {
 
   describe('broadcast behavior', () => {
     it('should broadcast to all nodes in range', () => {
-      const sim = new Simulation({ seed: 12345, realtime: false });
+      const sim = new Simulation({ seed: 12345, syncMode: true });
 
       const nodeA = sim.addNode({
         id: 'node-a',
@@ -148,7 +141,6 @@ describe('Integration Tests', () => {
       nodeC.setRoutingStrategy(createFloodingStrategy());
 
       sim.injectPacket('node-a', 'broadcast', new TextEncoder().encode('Broadcast'));
-      sim.step();
 
       // All nodes should receive broadcast
       expect(nodeB.inbox.length).toBeGreaterThan(0);
@@ -158,7 +150,7 @@ describe('Integration Tests', () => {
 
   describe('hop limit enforcement', () => {
     it('should drop packet after hop limit reached', () => {
-      const sim = new Simulation({ seed: 12345, realtime: false });
+      const sim = new Simulation({ seed: 12345, syncMode: true });
 
       // Create widely spaced nodes to ensure clear hop boundaries
       const nodes = [];
@@ -182,11 +174,6 @@ describe('Integration Tests', () => {
 
       sim.injectPacket('node-0', 'node-9', new TextEncoder().encode('Test'));
 
-      // Run many steps to allow full propagation
-      for (let i = 0; i < 20; i++) {
-        sim.step();
-      }
-
       // With hop limit 3, packet should propagate to node-3 and maybe node-4
       // But should NOT reach node-5 or beyond
       expect(nodes[3]!.inbox.length).toBeGreaterThan(0);
@@ -199,7 +186,7 @@ describe('Integration Tests', () => {
 
   describe('large network', () => {
     it('should handle 100+ nodes without infinite loops', () => {
-      const sim = new Simulation({ seed: 12345, realtime: false });
+      const sim = new Simulation({ seed: 12345, syncMode: true });
 
       // Create a grid of nodes
       const nodeCount = 100;
@@ -219,16 +206,10 @@ describe('Integration Tests', () => {
 
       sim.injectPacket('node-0', 'node-99', new TextEncoder().encode('Test'));
 
-      // Run simulation for a reasonable time
-      for (let i = 0; i < 20; i++) {
-        sim.step();
-      }
-
       const stats = sim.getStats();
       expect(stats.totalPackets).toBeGreaterThan(0);
 
       // Should complete without hanging
-      expect(sim.currentTime).toBeGreaterThan(0);
     });
   });
 
@@ -236,7 +217,7 @@ describe('Integration Tests', () => {
     it('should not deliver across network partition', () => {
       const sim = new Simulation({
         seed: 12345,
-        realtime: false,
+        syncMode: true,
         radioMediumConfig: { rxSensitivity: -110 },
       });
 
@@ -279,10 +260,6 @@ describe('Integration Tests', () => {
 
       sim.injectPacket('cluster1-a', 'cluster2-a', new TextEncoder().encode('Test'));
 
-      for (let i = 0; i < 20; i++) {
-        sim.step();
-      }
-
       // Message should not cross the partition
       expect(nodeB1.inbox.length).toBe(0);
       expect(nodeB2.inbox.length).toBe(0);
@@ -291,7 +268,7 @@ describe('Integration Tests', () => {
 
   describe('duplicate detection', () => {
     it('should not reforward duplicate packets', () => {
-      const sim = new Simulation({ seed: 12345, realtime: false });
+      const sim = new Simulation({ seed: 12345, syncMode: true });
 
       const nodeA = sim.addNode({
         id: 'node-a',
@@ -312,15 +289,10 @@ describe('Integration Tests', () => {
       nodeB.setRoutingStrategy(createFloodingStrategy());
 
       sim.injectPacket('node-a', 'broadcast', new TextEncoder().encode('Test'));
-      sim.step();
 
-      const duplicatesBeforeStep = nodeB.stats.duplicatesIgnored;
-
-      // Process again (simulating duplicate reception)
-      sim.step();
-
-      // Should ignore duplicates
-      expect(nodeB.stats.duplicatesIgnored).toBeGreaterThanOrEqual(duplicatesBeforeStep);
+      // In event-driven model, duplicates are handled during receive
+      // The seenPacketIds set prevents reprocessing
+      expect(nodeB.seenPacketIds.size).toBeGreaterThan(0);
     });
   });
 });

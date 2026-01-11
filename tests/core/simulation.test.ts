@@ -6,7 +6,7 @@ describe('Simulation', () => {
   let sim: Simulation;
 
   beforeEach(() => {
-    sim = new Simulation({ seed: 12345, realtime: false });
+    sim = new Simulation({ seed: 12345, syncMode: true });
   });
 
   describe('node management', () => {
@@ -66,39 +66,6 @@ describe('Simulation', () => {
     });
   });
 
-  describe('simulation control', () => {
-    it('should start and stop simulation', () => {
-      expect(sim.isRunning).toBe(false);
-
-      sim.start();
-      expect(sim.isRunning).toBe(true);
-
-      sim.stop();
-      expect(sim.isRunning).toBe(false);
-    });
-
-    it('should advance time on step', () => {
-      const initialTime = sim.currentTime;
-
-      sim.step();
-
-      expect(sim.currentTime).toBeGreaterThan(initialTime);
-    });
-
-    it('should emit tick events', () => {
-      let tickCount = 0;
-
-      sim.on('tick', () => {
-        tickCount++;
-      });
-
-      sim.step();
-      sim.step();
-
-      expect(tickCount).toBe(2);
-    });
-  });
-
   describe('packet injection', () => {
     it('should inject packet into simulation', () => {
       const node = sim.addNode({
@@ -117,7 +84,8 @@ describe('Simulation', () => {
       );
 
       expect(packetId).toBeDefined();
-      expect(node.outbox.length).toBeGreaterThan(0);
+      // Packet is immediately transmitted, so outbox should be empty
+      expect(node.outbox.length).toBe(0);
     });
 
     it('should throw if node not found', () => {
@@ -149,8 +117,7 @@ describe('Simulation', () => {
 
       sim.injectPacket('node-a', 'node-b', new TextEncoder().encode('test'));
 
-      sim.step();
-
+      // Packet is immediately delivered in event-driven model
       expect(nodeB.inbox.length).toBeGreaterThan(0);
     });
 
@@ -188,7 +155,6 @@ describe('Simulation', () => {
       nodeB.setRoutingStrategy(createFloodingStrategy());
 
       sim.injectPacket('node-a', 'node-b', new TextEncoder().encode('test'));
-      sim.step();
 
       expect(created).toBe(true);
       expect(transmitted).toBe(true);
@@ -254,7 +220,6 @@ describe('Simulation', () => {
       nodeA.setRoutingStrategy(createFloodingStrategy());
 
       sim.injectPacket('node-a', 'node-b', new TextEncoder().encode('test'));
-      sim.step();
 
       const stats = sim.getStats();
 
@@ -274,21 +239,17 @@ describe('Simulation', () => {
       nodeA.setRoutingStrategy(createFloodingStrategy());
 
       sim.injectPacket('node-a', 'node-b', new TextEncoder().encode('test'));
-      sim.step();
-      sim.step();
 
       sim.reset();
 
-      expect(sim.currentTime).toBe(0);
-      expect(sim.isRunning).toBe(false);
       expect(nodeA.stats.packetsSent).toBe(0);
     });
   });
 
   describe('determinism', () => {
     it('should produce same results with same seed', () => {
-      const sim1 = new Simulation({ seed: 12345, realtime: false });
-      const sim2 = new Simulation({ seed: 12345, realtime: false });
+      const sim1 = new Simulation({ seed: 12345, syncMode: true });
+      const sim2 = new Simulation({ seed: 12345, syncMode: true });
 
       // Add same nodes
       for (const s of [sim1, sim2]) {
@@ -312,14 +273,7 @@ describe('Simulation', () => {
         s.injectPacket('node-a', 'node-b', new TextEncoder().encode('test'));
       }
 
-      // Run same number of steps
-      for (let i = 0; i < 10; i++) {
-        sim1.step();
-        sim2.step();
-      }
-
       // Should have same state
-      expect(sim1.currentTime).toBe(sim2.currentTime);
       expect(sim1.getStats().totalPackets).toBe(sim2.getStats().totalPackets);
     });
   });

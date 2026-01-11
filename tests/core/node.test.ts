@@ -119,31 +119,22 @@ describe('VirtualNode', () => {
     });
   });
 
-  describe('tick', () => {
-    it('should update simulation time', () => {
-      const node = createTestNode('test-node');
-      node.setRoutingStrategy(createFloodingStrategy());
-
-      node.tick(100);
-      node.tick(100);
-
-      // Simulation time should be tracked internally
-      expect(node.canTransmit()).toBe(true);
-    });
-
-    it('should clean up old seen packet IDs', () => {
+  describe('seen packet cleanup', () => {
+    it('should clean up old seen packet IDs on receive when over limit', () => {
       const node = createTestNode('test-node');
       node.setRoutingStrategy(createFloodingStrategy());
 
       // Add many seen packet IDs
-      for (let i = 0; i < 1500; i++) {
+      for (let i = 0; i < 1001; i++) {
         node.seenPacketIds.add(`packet-${i}`);
       }
 
-      node.tick(100);
+      // Receive a new packet to trigger cleanup
+      const packet = createPacket('sender', 'test-node', new Uint8Array([1]));
+      node.receive(packet, -80);
 
       // Should clean up some IDs
-      expect(node.seenPacketIds.size).toBeLessThan(1500);
+      expect(node.seenPacketIds.size).toBeLessThan(1002);
     });
   });
 
@@ -177,28 +168,6 @@ describe('VirtualNode', () => {
 
       expect(node.position).toEqual(newPosition);
       expect(node.address.octet1).not.toBe(originalAddress.octet1);
-    });
-  });
-
-  describe('duty cycle', () => {
-    it('should track transmission time', () => {
-      const node = createTestNode('test-node');
-
-      expect(node.canTransmit()).toBe(true);
-
-      node.recordTransmission(100);
-      node.tick(1000);
-
-      expect(node.canTransmit()).toBe(false); // 100/1000 = 0.1, at limit
-    });
-
-    it('should respect duty cycle limit', () => {
-      const node = createTestNode('test-node');
-
-      node.recordTransmission(200);
-      node.tick(1000);
-
-      expect(node.canTransmit()).toBe(false); // 200/1000 = 0.2 > 0.1
     });
   });
 
