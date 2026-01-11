@@ -2,8 +2,12 @@
 
 A TypeScript-based mesh network simulator for LoRa/Meshtastic-style networks with realistic RF propagation.
 
+![Mesh Network Simulation](https://img.shields.io/badge/TypeScript-5.9-blue) ![Tests](https://img.shields.io/badge/tests-140%20passing-green) ![Coverage](https://img.shields.io/badge/coverage-90%25-green)
+
 ## Features
 
+- **Interactive UI**: Leaflet-based map with drag-and-drop nodes
+- **Visual Animations**: Watch packets propagate through the mesh network
 - **Isomorphic Core**: Works in Node.js and browsers
 - **Realistic RF Simulation**: Path loss models, fading, and link budgets
 - **Geographic Addressing**: Grid-based mesh addresses derived from coordinates
@@ -12,13 +16,92 @@ A TypeScript-based mesh network simulator for LoRa/Meshtastic-style networks wit
 - **Event-Driven**: Listen to packet lifecycle events
 - **Comprehensive Tests**: >90% code coverage with unit and integration tests
 
-## Installation
+## 🚀 Quick Start (New Machine)
+
+### Option 1: Automated Setup
 
 ```bash
-pnpm install
+# Clone the repository
+git clone <your-repo-url>
+cd Murmur
+
+# Run automated setup script
+./setup.sh
 ```
 
-## Quick Start
+The setup script will:
+- ✓ Check Node.js installation
+- ✓ Install pnpm if needed
+- ✓ Install all dependencies
+- ✓ Run tests to verify installation
+- ✓ Show next steps
+
+### Option 2: Using Make
+
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd Murmur
+
+# Install dependencies and verify
+make setup
+
+# Start the dev server
+make dev
+```
+
+### Option 3: Manual Setup
+
+```bash
+# Install pnpm if not already installed
+npm install -g pnpm
+
+# Install dependencies
+pnpm install
+
+# Start the dev server
+pnpm dev
+```
+
+Then open **http://localhost:3000** in your browser!
+
+## 📋 Requirements
+
+- **Node.js** 20 or higher
+- **pnpm** (will be installed automatically by setup script)
+- Modern web browser (Chrome, Firefox, Safari, Edge)
+
+## 🎮 Using the Interactive UI
+
+Once the dev server is running at http://localhost:3000:
+
+1. **Add Nodes**: Click anywhere on the map to place mesh network nodes
+2. **See Connections**: Green dashed lines show nodes within radio range
+3. **Send Packets**: Click "Broadcast Test" to send a test message
+4. **Watch Propagation**: See expanding circles as packets transmit
+5. **Control Simulation**:
+   - ▶️ Play - Run continuously
+   - ⏸ Pause - Stop simulation
+   - ⏭ Step - Advance one tick
+   - 🎚️ Speed - Adjust from 0.1x to 100x
+
+## 📚 Makefile Commands
+
+```bash
+make help           # Show all available commands
+make install        # Install dependencies
+make dev            # Start development server
+make test           # Run all tests
+make test-coverage  # Run tests with coverage report
+make build          # Build for production
+make clean          # Clean build artifacts
+make setup          # Full setup for new machine
+make info           # Show project information
+```
+
+## 💻 Programmatic API Usage
+
+If you want to use Ghostwave as a library (without the UI):
 
 ```typescript
 import { Simulation, createFloodingStrategy } from 'ghostwave';
