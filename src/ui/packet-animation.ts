@@ -65,6 +65,7 @@ export class PacketAnimation {
   private simMap: SimulationMap;
   private config: PacketAnimationConfig;
   private activeMarkers: Set<L.Marker> = new Set();
+  private drawnPaths: Set<string> = new Set(); // Track packets that already have paths drawn
 
   constructor(
     simulation: Simulation,
@@ -143,9 +144,19 @@ export class PacketAnimation {
   }
 
   /**
-   * Show delivery path for a packet
+   * Show delivery path for a packet (only once per packet ID)
    */
   private showDeliveryPath(packet: Packet, color: string): void {
+    // Only draw path once per packet to avoid overlapping flashing paths
+    if (this.drawnPaths.has(packet.header.id)) return;
+    this.drawnPaths.add(packet.header.id);
+
+    // Clean up old entries to prevent memory leak
+    if (this.drawnPaths.size > 100) {
+      const entries = Array.from(this.drawnPaths);
+      entries.slice(0, 50).forEach(id => this.drawnPaths.delete(id));
+    }
+
     const path = packet.meta.path;
     if (path.length < 2) return;
 
@@ -193,6 +204,7 @@ export class PacketAnimation {
       marker.remove();
     }
     this.activeMarkers.clear();
+    this.drawnPaths.clear();
 
     // Clear packet layer
     this.simMap.clearLayer('packets');
