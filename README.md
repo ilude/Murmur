@@ -30,8 +30,7 @@ cd Murmur
 ```
 
 The setup script will:
-- ✓ Check Node.js installation
-- ✓ Install pnpm if needed
+- ✓ Check Bun installation (auto-installs if needed)
 - ✓ Install all dependencies
 - ✓ Run tests to verify installation
 - ✓ Show next steps
@@ -53,23 +52,24 @@ make dev
 ### Option 3: Manual Setup
 
 ```bash
-# Install pnpm if not already installed
-npm install -g pnpm
+# Install Bun if not already installed
+curl -fsSL https://bun.sh/install | bash
 
 # Install dependencies
-pnpm install
+bun install
 
 # Start the dev server
-pnpm dev
+bun run dev
 ```
 
 Then open **http://localhost:3000** in your browser!
 
 ## 📋 Requirements
 
-- **Node.js** 20 or higher
-- **pnpm** (will be installed automatically by setup script)
+- **Bun** 1.0 or higher (will be installed automatically by setup script)
 - Modern web browser (Chrome, Firefox, Safari, Edge)
+
+> **Why Bun?** Bun is an all-in-one JavaScript runtime that's 3-4x faster than Node.js! It includes a package manager, bundler, test runner, and runtime in one tool. Perfect for lightning-fast development.
 
 ## 🎮 Using the Interactive UI
 

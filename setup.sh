@@ -17,37 +17,42 @@ echo "║                                           ║"
 echo "╚═══════════════════════════════════════════╝"
 echo -e "${NC}"
 
-# Check Node.js
-echo -e "${YELLOW}Checking Node.js...${NC}"
-if ! command -v node &> /dev/null; then
-    echo -e "${RED}✗ Node.js is not installed${NC}"
-    echo -e "${YELLOW}Please install Node.js 20+ from https://nodejs.org${NC}"
-    exit 1
-fi
+# Check Bun
+echo -e "${YELLOW}Checking Bun...${NC}"
+if ! command -v bun &> /dev/null; then
+    echo -e "${YELLOW}Bun is not installed. Installing...${NC}"
 
-NODE_VERSION=$(node --version)
-echo -e "${GREEN}✓ Node.js: ${NODE_VERSION}${NC}"
+    # Detect OS and install Bun
+    if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
+        curl -fsSL https://bun.sh/install | bash
 
-# Check pnpm
-echo -e "${YELLOW}Checking pnpm...${NC}"
-if ! command -v pnpm &> /dev/null; then
-    echo -e "${YELLOW}pnpm is not installed. Installing...${NC}"
-    npm install -g pnpm
-    echo -e "${GREEN}✓ pnpm installed${NC}"
+        # Source the bun path
+        export BUN_INSTALL="$HOME/.bun"
+        export PATH="$BUN_INSTALL/bin:$PATH"
+
+        echo -e "${GREEN}✓ Bun installed${NC}"
+    elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+        echo -e "${RED}Please install Bun manually on Windows from https://bun.sh${NC}"
+        echo -e "${YELLOW}Run: powershell -c \"irm bun.sh/install.ps1|iex\"${NC}"
+        exit 1
+    else
+        echo -e "${RED}Unsupported OS. Please install Bun manually from https://bun.sh${NC}"
+        exit 1
+    fi
 else
-    PNPM_VERSION=$(pnpm --version)
-    echo -e "${GREEN}✓ pnpm: ${PNPM_VERSION}${NC}"
+    BUN_VERSION=$(bun --version)
+    echo -e "${GREEN}✓ Bun: v${BUN_VERSION}${NC}"
 fi
 
 # Install dependencies
 echo ""
 echo -e "${YELLOW}Installing dependencies...${NC}"
-pnpm install
+bun install
 
 # Run tests to verify installation
 echo ""
 echo -e "${YELLOW}Running tests to verify installation...${NC}"
-pnpm test -- --run
+bun test
 
 echo ""
 echo -e "${GREEN}╔═══════════════════════════════════════════╗${NC}"
@@ -59,7 +64,7 @@ echo ""
 echo -e "${CYAN}Next steps:${NC}"
 echo ""
 echo -e "  1. Start the dev server:"
-echo -e "     ${GREEN}make dev${NC} or ${GREEN}pnpm dev${NC}"
+echo -e "     ${GREEN}make dev${NC} or ${GREEN}bun run dev${NC}"
 echo ""
 echo -e "  2. Open in your browser:"
 echo -e "     ${CYAN}http://localhost:3000${NC}"

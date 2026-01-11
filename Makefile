@@ -21,41 +21,41 @@ help: ## Show this help message
 	@echo "  make dev      # Start dev server"
 	@echo "  make test     # Run tests"
 
-install: ## Install dependencies with pnpm
+install: ## Install dependencies with bun
 	@echo "$(GREEN)Installing dependencies...$(NC)"
-	@command -v pnpm >/dev/null 2>&1 || { echo "$(RED)Error: pnpm is not installed. Install it from https://pnpm.io$(NC)"; exit 1; }
-	pnpm install
+	@command -v bun >/dev/null 2>&1 || { echo "$(RED)Error: bun is not installed. Install it from https://bun.sh$(NC)"; exit 1; }
+	bun install
 	@echo "$(GREEN)✓ Dependencies installed$(NC)"
 
 dev: ## Start development server
 	@echo "$(GREEN)Starting development server...$(NC)"
 	@echo "$(CYAN)Open http://localhost:3000 in your browser$(NC)"
-	pnpm dev
+	bun run dev
 
 build: ## Build for production
 	@echo "$(GREEN)Building for production...$(NC)"
-	pnpm build
+	bun run build
 	@echo "$(GREEN)✓ Build complete$(NC)"
 
 test: ## Run all tests
 	@echo "$(GREEN)Running tests...$(NC)"
-	pnpm test -- --run
+	bun test
 
 test-coverage: ## Run tests with coverage report
 	@echo "$(GREEN)Running tests with coverage...$(NC)"
-	pnpm test:coverage
+	bun run test:coverage
 
 test-watch: ## Run tests in watch mode
 	@echo "$(GREEN)Running tests in watch mode...$(NC)"
-	pnpm test
+	bun run test
 
 type-check: ## Run TypeScript type checking
 	@echo "$(GREEN)Type checking...$(NC)"
-	pnpm type-check
+	bun run type-check
 
 preview: build ## Build and preview production bundle
 	@echo "$(GREEN)Starting preview server...$(NC)"
-	pnpm preview
+	bun run preview
 
 clean: ## Clean build artifacts and node_modules
 	@echo "$(YELLOW)Cleaning...$(NC)"
@@ -79,7 +79,7 @@ info: ## Show project information
 	@echo "$(GREEN)Project Info:$(NC)"
 	@echo "  Name:        Ghostwave"
 	@echo "  Description: TypeScript-based mesh network simulator"
-	@echo "  Tech Stack:  TypeScript, Vite, Vitest, Leaflet"
+	@echo "  Tech Stack:  TypeScript, Vite, Vitest, Leaflet, Bun"
 	@echo "  Coverage:    >90% code coverage"
 	@echo "  Tests:       140+ test cases"
 	@echo ""
@@ -91,15 +91,12 @@ info: ## Show project information
 	@echo "  make build        - Build for production"
 	@echo ""
 	@echo "$(YELLOW)Requirements:$(NC)"
-	@echo "  - Node.js 20+"
-	@echo "  - pnpm (https://pnpm.io)"
+	@echo "  - Bun 1.0+ (https://bun.sh)"
 
 check-deps: ## Check if required dependencies are installed
 	@echo "$(GREEN)Checking dependencies...$(NC)"
-	@command -v node >/dev/null 2>&1 || { echo "$(RED)✗ Node.js is not installed$(NC)"; exit 1; }
-	@echo "$(GREEN)✓ Node.js: $$(node --version)$(NC)"
-	@command -v pnpm >/dev/null 2>&1 || { echo "$(RED)✗ pnpm is not installed. Install from https://pnpm.io$(NC)"; exit 1; }
-	@echo "$(GREEN)✓ pnpm: $$(pnpm --version)$(NC)"
+	@command -v bun >/dev/null 2>&1 || { echo "$(RED)✗ Bun is not installed. Install from https://bun.sh$(NC)"; exit 1; }
+	@echo "$(GREEN)✓ Bun: $$(bun --version)$(NC)"
 	@echo "$(GREEN)✓ All dependencies satisfied$(NC)"
 
 setup: check-deps install ## Full setup for new machine

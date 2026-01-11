@@ -1,6 +1,8 @@
 # Dependencies
 node_modules/
-.pnpm-store/
+
+# Bun
+.bun/
 
 # Build outputs
 dist/
@@ -25,7 +27,7 @@ Thumbs.db
 logs/
 *.log
 npm-debug.log*
-pnpm-debug.log*
+bun-debug.log*
 
 # Environment
 .env
