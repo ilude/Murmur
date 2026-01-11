@@ -8,7 +8,17 @@ import { VirtualNode, type NodeConfig } from './node.js';
 import { RadioMedium, type RadioMediumConfig } from './radio-medium.js';
 import type { Packet } from './packet.js';
 import type { LatLng } from '../utils/geo.js';
-import { haversineDistance } from '../utils/geo.js';
+import {
+  LinkGraph,
+  LinkPrecomputer,
+  type ComputeProgress,
+} from '../graph/index.js';
+
+export interface GraphConfig {
+  maxLinkDistanceKm?: number;  // Maximum distance for precomputed links
+  useTerrainLOS?: boolean;     // Use terrain-aware LOS for precomputation
+  staleThresholdMs?: number;   // Time before links are considered stale
+}
 
 export interface SimulationConfig {
   seed: number; // For deterministic PRNG
@@ -16,6 +26,8 @@ export interface SimulationConfig {
   realtime: boolean; // Run in realtime or fast-forward
   realtimeMultiplier: number; // Speed multiplier for realtime mode
   radioMediumConfig?: Partial<RadioMediumConfig>;
+  enableGraph?: boolean;       // Enable link graph precomputation
+  graphConfig?: GraphConfig;
 }
 
 export interface SimulationEvent {
@@ -48,7 +60,7 @@ export interface SimulationStats {
   deliveryRate: number;
 }
 
-export interface SimulationEvents {
+export type SimulationEvents = {
   tick: { time: number };
   'packet:created': { packet: Packet; node: VirtualNode };
   'packet:transmitted': { packet: Packet; sender: VirtualNode; receivers: number };
@@ -57,13 +69,14 @@ export interface SimulationEvents {
   'packet:dropped': { packet: Packet; reason: string; node: VirtualNode };
   'node:added': { node: VirtualNode };
   'node:removed': { nodeId: string };
-}
+};
 
 const DEFAULT_CONFIG: SimulationConfig = {
   seed: Date.now(),
   tickInterval: 100,
   realtime: false,
   realtimeMultiplier: 1,
+  enableGraph: false,
 };
 
 export class Simulation extends TypedEventEmitter<SimulationEvents> {
@@ -72,11 +85,15 @@ export class Simulation extends TypedEventEmitter<SimulationEvents> {
   readonly radioMedium: RadioMedium;
   readonly random: SeededRandom;
 
+  // Graph-related members
+  readonly linkGraph: LinkGraph;
+  readonly precomputer: LinkPrecomputer | undefined;
+
   currentTime: number = 0;
   isRunning: boolean = false;
 
   private eventQueue: SimulationEvent[] = [];
-  private intervalId?: ReturnType<typeof setInterval>;
+  private intervalId: ReturnType<typeof setInterval> | undefined;
   private packetRegistry: Map<string, Packet> = new Map();
 
   constructor(config: Partial<SimulationConfig> = {}) {
@@ -88,6 +105,23 @@ export class Simulation extends TypedEventEmitter<SimulationEvents> {
       this.config.radioMediumConfig,
       this.random.fork()
     );
+
+    // Initialize link graph
+    this.linkGraph = new LinkGraph();
+
+    // Initialize precomputer if graph is enabled
+    if (this.config.enableGraph) {
+      const gc = this.config.graphConfig ?? {};
+      this.precomputer = new LinkPrecomputer(
+        this.radioMedium,
+        this.linkGraph,
+        {
+          maxDistanceKm: gc.maxLinkDistanceKm ?? 20,
+          useTerrainLOS: gc.useTerrainLOS ?? false,
+          staleThresholdMs: gc.staleThresholdMs ?? 5 * 60 * 1000,
+        }
+      );
+    }
   }
 
   /**
@@ -379,6 +413,66 @@ export class Simulation extends TypedEventEmitter<SimulationEvents> {
     };
   }
 
+  // ============ Graph Operations ============
+
+  /**
+   * Precompute all link budgets between nodes
+   * This should be called after adding all nodes for efficient simulation
+   */
+  async precomputeAllLinks(
+    onProgress?: (progress: ComputeProgress) => void
+  ): Promise<number> {
+    if (!this.precomputer) {
+      throw new Error('Graph precomputation is not enabled. Set enableGraph: true in config.');
+    }
+
+    const nodes = Array.from(this.nodes.values());
+    return await this.precomputer.computeAllLinks(nodes, onProgress);
+  }
+
+  /**
+   * Recompute links for a specific node (e.g., after it moves)
+   */
+  async recomputeNodeLinks(nodeId: string): Promise<number> {
+    if (!this.precomputer) {
+      return 0;
+    }
+
+    const node = this.nodes.get(nodeId);
+    if (!node) {
+      throw new Error(`Node ${nodeId} not found`);
+    }
+
+    const allNodes = Array.from(this.nodes.values());
+    return await this.precomputer.recomputeNodeLinks(node, allNodes);
+  }
+
+  /**
+   * Find optimal path between two nodes using precomputed link data
+   * Returns array of node IDs from source to destination
+   */
+  findOptimalPath(from: string, to: string): string[] {
+    return this.linkGraph.findPath(from, to);
+  }
+
+  /**
+   * Get cached link budget between two nodes
+   */
+  getCachedLinkBudget(from: string, to: string) {
+    return this.linkGraph.getLink(from, to);
+  }
+
+  /**
+   * Get graph statistics
+   */
+  getGraphStats() {
+    return this.precomputer?.getStats() ?? {
+      nodeCount: 0,
+      linkCount: 0,
+      staleCount: 0,
+    };
+  }
+
   /**
    * Reset the simulation
    */
@@ -394,6 +488,9 @@ export class Simulation extends TypedEventEmitter<SimulationEvents> {
     this.currentTime = 0;
     this.eventQueue = [];
     this.packetRegistry.clear();
+
+    // Clear graph data
+    this.linkGraph.clear();
 
     // Reset random number generator
     this.random.reset();
