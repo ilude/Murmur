@@ -175,7 +175,7 @@ describe('Integration Tests', () => {
       }
 
       let maxHopsReached = 0;
-      sim.on('packet:received', ({ packet, receiver }) => {
+      sim.on('packet:received', ({ packet: _packet, receiver }) => {
         const nodeIndex = parseInt(receiver.id.split('-')[1]!);
         maxHopsReached = Math.max(maxHopsReached, nodeIndex);
       });
