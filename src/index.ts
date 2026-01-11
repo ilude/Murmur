@@ -7,7 +7,6 @@
 export { Simulation } from './core/simulation.js';
 export type {
   SimulationConfig,
-  SimulationEvent,
   SimulationEvents,
   NetworkTopology,
   SimulationStats,

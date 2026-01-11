@@ -51,28 +51,11 @@ export class Controls {
     this.container.innerHTML = `
       <div class="controls-panel">
         <div class="control-section">
-          <h3>Simulation</h3>
+          <h3>Network</h3>
           <div class="button-group">
-            <button id="btn-play" class="btn btn-primary">
-              <span class="icon">▶</span> Play
-            </button>
-            <button id="btn-pause" class="btn" disabled>
-              <span class="icon">⏸</span> Pause
-            </button>
-            <button id="btn-step" class="btn">
-              <span class="icon">⏭</span> Step
-            </button>
             <button id="btn-reset" class="btn btn-danger">
-              <span class="icon">↻</span> Reset
+              <span class="icon">↻</span> Clear Network
             </button>
-          </div>
-        </div>
-
-        <div class="control-section">
-          <h3>Speed</h3>
-          <div class="speed-control">
-            <input type="range" id="speed-slider" min="0" max="3" step="1" value="1">
-            <span id="speed-label">1x</span>
           </div>
         </div>
 
@@ -129,10 +112,6 @@ export class Controls {
               <span class="stat-label">Avg Hops</span>
               <span class="stat-value" id="stat-hops">0</span>
             </div>
-            <div class="stat-item">
-              <span class="stat-label">Sim Time</span>
-              <span class="stat-value" id="stat-time">0s</span>
-            </div>
           </div>
         </div>
 
@@ -150,21 +129,8 @@ export class Controls {
    * Set up event listeners
    */
   private setupEventListeners(): void {
-    // Playback controls
-    this.getButton('btn-play')?.addEventListener('click', () => this.play());
-    this.getButton('btn-pause')?.addEventListener('click', () => this.pause());
-    this.getButton('btn-step')?.addEventListener('click', () => this.step());
+    // Network control
     this.getButton('btn-reset')?.addEventListener('click', () => this.reset());
-
-    // Speed control
-    const speedSlider = document.getElementById('speed-slider') as HTMLInputElement;
-    speedSlider?.addEventListener('input', (e) => {
-      const speeds = [0.1, 1, 10, 100];
-      const index = parseInt((e.target as HTMLInputElement).value);
-      const speed = speeds[index] ?? 1;
-      this.setSpeed(speed);
-      this.updateSpeedLabel(speed);
-    });
 
     // View toggles
     document.getElementById('show-connections')?.addEventListener('change', (e) => {
@@ -202,44 +168,16 @@ export class Controls {
     this.setStatValue('stat-delivered', stats.deliveredPackets.toString());
     this.setStatValue('stat-rate', `${(stats.deliveryRate * 100).toFixed(0)}%`);
     this.setStatValue('stat-hops', stats.averageHops.toFixed(1));
-    this.setStatValue('stat-time', `${(this.simulation.currentTime / 1000).toFixed(1)}s`);
 
     // Update node markers
     this.nodeLayer.updateMarkers();
   }
 
   /**
-   * Play simulation
-   */
-  private play(): void {
-    this.simulation.start();
-    this.getButton('btn-play')?.setAttribute('disabled', 'true');
-    this.getButton('btn-pause')?.removeAttribute('disabled');
-  }
-
-  /**
-   * Pause simulation
-   */
-  private pause(): void {
-    this.simulation.stop();
-    this.getButton('btn-pause')?.setAttribute('disabled', 'true');
-    this.getButton('btn-play')?.removeAttribute('disabled');
-  }
-
-  /**
-   * Step simulation
-   */
-  private step(): void {
-    this.simulation.step();
-    this.nodeLayer.updateConnections();
-  }
-
-  /**
-   * Reset simulation
+   * Reset/clear the network
    */
   private reset(): void {
-    if (confirm('Reset simulation? This will clear all nodes and packets.')) {
-      this.simulation.stop();
+    if (confirm('Clear network? This will remove all nodes and packets.')) {
       this.simulation.reset();
 
       // Remove all nodes
@@ -249,32 +187,7 @@ export class Controls {
       }
 
       this.nodeCounter = 0;
-      this.getButton('btn-pause')?.setAttribute('disabled', 'true');
-      this.getButton('btn-play')?.removeAttribute('disabled');
-    }
-  }
-
-  /**
-   * Set simulation speed
-   */
-  private setSpeed(multiplier: number): void {
-    // Update simulation config
-    this.simulation.config.realtimeMultiplier = multiplier;
-
-    // Restart if running
-    if (this.simulation.isRunning) {
-      this.simulation.stop();
-      this.simulation.start();
-    }
-  }
-
-  /**
-   * Update speed label
-   */
-  private updateSpeedLabel(speed: number): void {
-    const label = document.getElementById('speed-label');
-    if (label) {
-      label.textContent = `${speed}x`;
+      this.nodeLayer.updateConnections();
     }
   }
 
