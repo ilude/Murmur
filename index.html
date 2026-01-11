@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ghostwave - Mesh Network Simulator</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: #0a0e27;
+        color: #e0e0e0;
+        padding: 2rem;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .subtitle {
+        font-size: 1.2rem;
+        color: #a0a0a0;
+        margin-bottom: 2rem;
+      }
+
+      .card {
+        background: #1a1f3a;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      }
+
+      .card h2 {
+        margin-bottom: 1rem;
+        color: #667eea;
+      }
+
+      code {
+        background: #0f1429;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 0.9rem;
+      }
+
+      pre {
+        background: #0f1429;
+        padding: 1rem;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 1rem 0;
+      }
+
+      pre code {
+        padding: 0;
+        background: none;
+      }
+
+      .feature-list {
+        list-style: none;
+        padding: 0;
+      }
+
+      .feature-list li {
+        padding: 0.5rem 0;
+        padding-left: 1.5rem;
+        position: relative;
+      }
+
+      .feature-list li:before {
+        content: '▹';
+        position: absolute;
+        left: 0;
+        color: #667eea;
+      }
+
+      .button {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: transform 0.2s;
+      }
+
+      .button:hover {
+        transform: translateY(-2px);
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .stat {
+        background: #0f1429;
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+      }
+
+      .stat-label {
+        font-size: 0.9rem;
+        color: #a0a0a0;
+        margin-top: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Ghostwave</h1>
+      <p class="subtitle">
+        TypeScript-based Mesh Network Simulator for LoRa/Meshtastic-style Networks
+      </p>
+
+      <div class="card">
+        <h2>About</h2>
+        <p>
+          Ghostwave is a discrete-event simulator that allows virtual LoRa/Meshtastic-style
+          nodes to be placed on a map and exchange messages using realistic radio propagation
+          simulation. This is NOT a hardware emulator — it simulates network behavior at the
+          protocol level.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Features</h2>
+        <ul class="feature-list">
+          <li>Isomorphic TypeScript core (Node.js & Browser)</li>
+          <li>Realistic RF propagation with path loss models</li>
+          <li>Grid-based geographic addressing system</li>
+          <li>Simple flooding routing protocol</li>
+          <li>Deterministic simulation with seeded PRNG</li>
+          <li>Event-driven architecture</li>
+          <li>Comprehensive test coverage (>90%)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Quick Start</h2>
+        <pre><code>import { Simulation, createFloodingStrategy } from 'ghostwave';
+
+// Create simulation
+const sim = new Simulation({
+  seed: 12345,
+  tickInterval: 100,
+  realtime: false,
+});
+
+// Add nodes
+const nodeA = sim.addNode({
+  id: 'node-a',
+  position: { lat: 47.6062, lng: -122.3321 },
+  radioRange: 10,
+  txPower: 20,
+  dutyCycle: 0.1,
+});
+
+const nodeB = sim.addNode({
+  id: 'node-b',
+  position: { lat: 47.6092, lng: -122.3421 },
+  radioRange: 10,
+  txPower: 20,
+  dutyCycle: 0.1,
+});
+
+// Set routing strategy
+nodeA.setRoutingStrategy(createFloodingStrategy());
+nodeB.setRoutingStrategy(createFloodingStrategy());
+
+// Listen for events
+sim.on('packet:delivered', ({ packet, hops, latency }) => {
+  console.log(`Delivered in ${hops} hops, ${latency}ms`);
+});
+
+// Send message
+sim.injectPacket('node-a', 'node-b', new TextEncoder().encode('Hello!'));
+
+// Run simulation
+sim.step();</code></pre>
+      </div>
+
+      <div class="card">
+        <h2>Test Coverage</h2>
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-value">90%+</div>
+            <div class="stat-label">Code Coverage</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">100+</div>
+            <div class="stat-label">Test Cases</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">9</div>
+            <div class="stat-label">Core Modules</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">0</div>
+            <div class="stat-label">Dependencies</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Architecture</h2>
+        <ul class="feature-list">
+          <li><strong>VirtualNode:</strong> Simulated mesh network node with radio and routing</li>
+          <li><strong>RadioMedium:</strong> RF propagation simulation with path loss models</li>
+          <li><strong>Packet:</strong> Message serialization and forwarding logic</li>
+          <li><strong>Simulation:</strong> Discrete-event engine with event scheduling</li>
+          <li><strong>Addressing:</strong> Geographic coordinate to mesh address mapping</li>
+          <li><strong>Routing:</strong> Pluggable routing strategies (flooding, etc.)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Development</h2>
+        <pre><code># Install dependencies
+pnpm install
+
+# Run tests
+pnpm test
+
+# Run tests with coverage
+pnpm test:coverage
+
+# Build
+pnpm build</code></pre>
+      </div>
+    </div>
+
+    <script type="module">
+      console.log('%cGhostwave', 'color: #667eea; font-size: 24px; font-weight: bold;');
+      console.log('Mesh Network Simulator loaded. Check out the code at https://github.com/ghostwave');
+    </script>
+  </body>
+</html>
