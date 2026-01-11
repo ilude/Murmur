@@ -7,7 +7,6 @@ import type { MeshAddress } from './addressing.js';
 import type { Packet } from './packet.js';
 import type { RouteEntry, RoutingStrategy } from './routing/types.js';
 import { latLngToAddress, formatAddress } from './addressing.js';
-import { createPacket } from './packet.js';
 
 export interface NodeConfig {
   id: string;

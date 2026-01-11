@@ -37,7 +37,7 @@ export class PacketAnimation {
   private simMap: SimulationMap;
   private config: PacketAnimationConfig;
   private animations: Map<string, AnimationState> = new Map();
-  private animationFrame?: number;
+  private animationFrame: number | undefined;
 
   constructor(
     simulation: Simulation,

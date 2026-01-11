@@ -30,7 +30,7 @@ export class FloodingStrategy implements RoutingStrategy {
   /**
    * Handle received packet
    */
-  onReceive(node: VirtualNode, packet: Packet, rssi: number): RoutingDecision {
+  onReceive(node: VirtualNode, packet: Packet, _rssi: number): RoutingDecision {
     const { header } = packet;
 
     // Check if packet is for this node (or broadcast)
@@ -125,7 +125,7 @@ export class FloodingStrategy implements RoutingStrategy {
   /**
    * Periodic maintenance (not used in simple flooding)
    */
-  onTick(node: VirtualNode, deltaMs: number): void {
+  onTick(_node: VirtualNode, _deltaMs: number): void {
     // No periodic maintenance needed for simple flooding
   }
 }

@@ -142,3 +142,28 @@ export function isInBounds(point: LatLng, bounds: LatLngBounds): boolean {
     point.lng <= bounds.east
   );
 }
+
+/**
+ * Generate evenly spaced points along a great circle path between two points
+ * @param from Starting point
+ * @param to Ending point
+ * @param count Number of points to generate (including start and end)
+ * @returns Array of interpolated points
+ */
+export function interpolatePoints(from: LatLng, to: LatLng, count: number): LatLng[] {
+  if (count < 2) {
+    return [from];
+  }
+
+  const points: LatLng[] = [];
+  const bear = bearing(from, to);
+  const totalDistance = haversineDistance(from, to);
+
+  for (let i = 0; i < count; i++) {
+    const fraction = i / (count - 1);
+    const dist = totalDistance * fraction;
+    points.push(destination(from, bear, dist));
+  }
+
+  return points;
+}
