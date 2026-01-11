@@ -15,6 +15,7 @@ export interface PacketMeta {
   path: string[]; // Node IDs this packet has traversed
   createdAt: number; // Simulation time
   deliveredAt?: number; // Simulation time when delivered
+  forwardDelay?: number; // Delay in ms before forwarding (for visual cascade)
 }
 
 export interface Packet {
@@ -66,10 +67,20 @@ export function createPacket(
  */
 export function cloneForForward(
   packet: Packet,
-  forwarderId: string
+  forwarderId: string,
+  forwardDelay?: number
 ): Packet | null {
   if (packet.header.hopLimit <= 0) {
     return null;
+  }
+
+  const meta: PacketMeta = {
+    ...packet.meta,
+    path: [...packet.meta.path, forwarderId],
+  };
+
+  if (forwardDelay !== undefined) {
+    meta.forwardDelay = forwardDelay;
   }
 
   return {
@@ -79,10 +90,7 @@ export function cloneForForward(
       hopCount: packet.header.hopCount + 1,
     },
     payload: packet.payload,
-    meta: {
-      ...packet.meta,
-      path: [...packet.meta.path, forwarderId],
-    },
+    meta,
   };
 }
 

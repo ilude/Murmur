@@ -15,7 +15,7 @@ export interface FloodingConfig {
 
 const DEFAULT_CONFIG: FloodingConfig = {
   defaultHopLimit: 7,
-  rebroadcastDelay: 100,
+  rebroadcastDelay: 400, // Delay for visual cascade effect
   duplicateWindow: 300000, // 5 minutes
 };
 
@@ -54,7 +54,11 @@ export class FloodingStrategy implements RoutingStrategy {
     // For broadcast packets, both deliver and forward
     if (header.destination === 'broadcast') {
       if (shouldForward) {
-        const forwardedPacket = cloneForForward(packet, node.id);
+        const forwardedPacket = cloneForForward(
+          packet,
+          node.id,
+          this.config.rebroadcastDelay
+        );
 
         if (!forwardedPacket) {
           return {
@@ -79,7 +83,11 @@ export class FloodingStrategy implements RoutingStrategy {
 
     // Forward if not the destination
     if (shouldForward) {
-      const forwardedPacket = cloneForForward(packet, node.id);
+      const forwardedPacket = cloneForForward(
+        packet,
+        node.id,
+        this.config.rebroadcastDelay
+      );
 
       if (!forwardedPacket) {
         return {
@@ -120,13 +128,6 @@ export class FloodingStrategy implements RoutingStrategy {
       payload,
       this.config.defaultHopLimit
     );
-  }
-
-  /**
-   * Periodic maintenance (not used in simple flooding)
-   */
-  onTick(_node: VirtualNode, _deltaMs: number): void {
-    // No periodic maintenance needed for simple flooding
   }
 }
 

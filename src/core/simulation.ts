@@ -22,19 +22,10 @@ export interface GraphConfig {
 
 export interface SimulationConfig {
   seed: number; // For deterministic PRNG
-  tickInterval: number; // ms per tick
-  realtime: boolean; // Run in realtime or fast-forward
-  realtimeMultiplier: number; // Speed multiplier for realtime mode
   radioMediumConfig?: Partial<RadioMediumConfig>;
   enableGraph?: boolean;       // Enable link graph precomputation
   graphConfig?: GraphConfig;
-}
-
-export interface SimulationEvent {
-  time: number; // Simulation time to execute
-  type: 'transmit' | 'receive' | 'timeout' | 'custom';
-  data: unknown;
-  handler: () => void;
+  syncMode?: boolean;          // Synchronous mode (for testing, no animation delays)
 }
 
 export interface NetworkTopology {
@@ -61,7 +52,6 @@ export interface SimulationStats {
 }
 
 export type SimulationEvents = {
-  tick: { time: number };
   'packet:created': { packet: Packet; node: VirtualNode };
   'packet:transmitted': { packet: Packet; sender: VirtualNode; receivers: number };
   'packet:received': { packet: Packet; receiver: VirtualNode; rssi: number };
@@ -73,9 +63,6 @@ export type SimulationEvents = {
 
 const DEFAULT_CONFIG: SimulationConfig = {
   seed: Date.now(),
-  tickInterval: 100,
-  realtime: false,
-  realtimeMultiplier: 1,
   enableGraph: false,
 };
 
@@ -89,11 +76,6 @@ export class Simulation extends TypedEventEmitter<SimulationEvents> {
   readonly linkGraph: LinkGraph;
   readonly precomputer: LinkPrecomputer | undefined;
 
-  currentTime: number = 0;
-  isRunning: boolean = false;
-
-  private eventQueue: SimulationEvent[] = [];
-  private intervalId: ReturnType<typeof setInterval> | undefined;
   private packetRegistry: Map<string, Packet> = new Map();
 
   constructor(config: Partial<SimulationConfig> = {}) {
@@ -160,101 +142,14 @@ export class Simulation extends TypedEventEmitter<SimulationEvents> {
   }
 
   /**
-   * Start the simulation
+   * Transmit a packet from a node (with visual cascade delay for forwarding)
    */
-  start(): void {
-    if (this.isRunning) {
-      return;
+  transmitPacket(sender: VirtualNode, packet: Packet): void {
+    // Register packet if it's new
+    if (!this.packetRegistry.has(packet.header.id)) {
+      this.packetRegistry.set(packet.header.id, packet);
+      this.emit('packet:created', { packet, node: sender });
     }
-
-    this.isRunning = true;
-
-    if (this.config.realtime) {
-      const intervalMs =
-        this.config.tickInterval / this.config.realtimeMultiplier;
-      this.intervalId = setInterval(() => {
-        this.step();
-      }, intervalMs);
-    }
-  }
-
-  /**
-   * Stop the simulation
-   */
-  stop(): void {
-    this.isRunning = false;
-
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = undefined;
-    }
-  }
-
-  /**
-   * Execute a single simulation step
-   */
-  step(): void {
-    // Process all events scheduled for this time
-    this.processEvents();
-
-    // Process outgoing packets from all nodes
-    this.processOutgoingPackets();
-
-    // Update all nodes
-    for (const node of this.nodes.values()) {
-      node.tick(this.config.tickInterval);
-    }
-
-    // Advance simulation time
-    this.currentTime += this.config.tickInterval;
-
-    // Emit tick event
-    this.emit('tick', { time: this.currentTime });
-  }
-
-  /**
-   * Process events scheduled for current time
-   */
-  private processEvents(): void {
-    const eventsToProcess = this.eventQueue.filter(
-      (e) => e.time <= this.currentTime
-    );
-
-    // Remove processed events
-    this.eventQueue = this.eventQueue.filter(
-      (e) => e.time > this.currentTime
-    );
-
-    // Execute event handlers
-    for (const event of eventsToProcess) {
-      event.handler();
-    }
-  }
-
-  /**
-   * Process outgoing packets from all nodes
-   */
-  private processOutgoingPackets(): void {
-    for (const node of this.nodes.values()) {
-      while (node.outbox.length > 0) {
-        const packet = node.outbox.shift()!;
-
-        // Register packet if it's new
-        if (!this.packetRegistry.has(packet.header.id)) {
-          this.packetRegistry.set(packet.header.id, packet);
-          this.emit('packet:created', { packet, node });
-        }
-
-        // Transmit packet
-        this.transmitPacket(node, packet);
-      }
-    }
-  }
-
-  /**
-   * Transmit a packet from a node
-   */
-  private transmitPacket(sender: VirtualNode, packet: Packet): void {
     const allNodes = Array.from(this.nodes.values());
     const result = this.radioMedium.transmit(sender, packet, allNodes);
 
@@ -264,21 +159,34 @@ export class Simulation extends TypedEventEmitter<SimulationEvents> {
       receivers: result.reachedNodes.length,
     });
 
-    // Deliver to receiving nodes
-    for (const { node, rssi, delay } of result.reachedNodes) {
-      if (delay > 0) {
-        // Schedule delayed reception
-        this.scheduleEvent({
-          time: this.currentTime + delay,
-          type: 'receive',
-          data: { node, packet, rssi },
-          handler: () => {
-            this.receivePacket(node, packet, rssi);
-          },
-        });
-      } else {
-        // Immediate reception
-        this.receivePacket(node, packet, rssi);
+    // Deliver to receiving nodes immediately (they decide whether to forward)
+    for (const { node, rssi } of result.reachedNodes) {
+      this.receivePacket(node, packet, rssi);
+    }
+
+    // Schedule forwarding with delay for visual cascade effect
+    this.scheduleForwardedPackets();
+  }
+
+  /**
+   * Schedule forwarded packets with delay for visual cascade
+   */
+  private scheduleForwardedPackets(): void {
+    for (const node of this.nodes.values()) {
+      while (node.outbox.length > 0) {
+        const packet = node.outbox.shift()!;
+
+        if (this.config.syncMode) {
+          // Synchronous mode for testing - transmit immediately
+          this.transmitPacket(node, packet);
+        } else {
+          // Async mode for visual cascade - delay forwarding
+          const delay = packet.meta.forwardDelay ?? 100;
+          const forwardingNode = node; // Capture node reference
+          setTimeout(() => {
+            this.transmitPacket(forwardingNode, packet);
+          }, delay);
+        }
       }
     }
   }
@@ -300,20 +208,11 @@ export class Simulation extends TypedEventEmitter<SimulationEvents> {
       packet.header.destination === receiver.id ||
       packet.header.destination === 'broadcast'
     ) {
-      const latency = this.currentTime - packet.meta.createdAt;
+      const latency = Date.now() - packet.meta.createdAt;
       const hops = packet.header.hopCount;
 
       this.emit('packet:delivered', { packet, hops, latency });
     }
-  }
-
-  /**
-   * Schedule an event for future execution
-   */
-  scheduleEvent(event: SimulationEvent): void {
-    this.eventQueue.push(event);
-    // Keep queue sorted by time
-    this.eventQueue.sort((a, b) => a.time - b.time);
   }
 
   /**
@@ -329,7 +228,15 @@ export class Simulation extends TypedEventEmitter<SimulationEvents> {
       throw new Error(`Node ${fromNodeId} not found`);
     }
 
-    return node.send(toNodeId, payload);
+    const packetId = node.send(toNodeId, payload);
+
+    // Immediately transmit the packet
+    const packet = node.outbox.shift();
+    if (packet) {
+      this.transmitPacket(node, packet);
+    }
+
+    return packetId;
   }
 
   /**
@@ -477,16 +384,12 @@ export class Simulation extends TypedEventEmitter<SimulationEvents> {
    * Reset the simulation
    */
   reset(): void {
-    this.stop();
-
     // Reset all nodes
     for (const node of this.nodes.values()) {
       node.reset();
     }
 
     // Clear state
-    this.currentTime = 0;
-    this.eventQueue = [];
     this.packetRegistry.clear();
 
     // Clear graph data

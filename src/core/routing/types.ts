@@ -24,11 +24,6 @@ export interface RoutingStrategy {
    * Called when a node wants to send a new packet
    */
   onSend(node: VirtualNode, destination: string, payload: Uint8Array): Packet;
-
-  /**
-   * Called periodically for routing protocol maintenance
-   */
-  onTick(node: VirtualNode, deltaMs: number): void;
 }
 
 export interface RouteEntry {

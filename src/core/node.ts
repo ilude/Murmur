@@ -42,10 +42,6 @@ export class VirtualNode {
   // Routing strategy
   private routingStrategy?: RoutingStrategy;
 
-  // Duty cycle tracking
-  private transmitTime: number = 0; // Total time spent transmitting
-  private simulationTime: number = 0; // Total simulation time
-
   constructor(config: NodeConfig) {
     this.id = config.id;
     this.config = config;
@@ -95,6 +91,13 @@ export class VirtualNode {
     // Mark as seen
     this.seenPacketIds.add(packet.header.id);
 
+    // Size-based cleanup of seen packet IDs
+    if (this.seenPacketIds.size > 1000) {
+      const idsArray = Array.from(this.seenPacketIds);
+      const toRemove = idsArray.slice(0, Math.floor(idsArray.length / 2));
+      toRemove.forEach(id => this.seenPacketIds.delete(id));
+    }
+
     // Add to inbox
     this.inbox.push(packet);
 
@@ -136,50 +139,16 @@ export class VirtualNode {
     }
 
     const packet = this.routingStrategy.onSend(this, destination, payload);
+
+    // Mark as seen so we don't re-forward our own packet when it comes back
+    this.seenPacketIds.add(packet.header.id);
+
     this.outbox.push(packet);
     this.stats.packetsSent++;
 
     return packet.header.id;
   }
 
-  /**
-   * Check if node can transmit (duty cycle check)
-   */
-  canTransmit(): boolean {
-    if (this.simulationTime === 0) {
-      return true;
-    }
-
-    const currentDutyCycle = this.transmitTime / this.simulationTime;
-    return currentDutyCycle < this.config.dutyCycle;
-  }
-
-  /**
-   * Record transmission time
-   */
-  recordTransmission(durationMs: number): void {
-    this.transmitTime += durationMs;
-  }
-
-  /**
-   * Periodic tick for routing protocol maintenance
-   */
-  tick(deltaMs: number): void {
-    this.simulationTime += deltaMs;
-
-    if (this.routingStrategy) {
-      this.routingStrategy.onTick(this, deltaMs);
-    }
-
-    // Clean up old seen packet IDs (older than 5 minutes)
-    // In a real implementation, this would use a time-based cache
-    if (this.seenPacketIds.size > 1000) {
-      // Simple size-based cleanup for now
-      const idsArray = Array.from(this.seenPacketIds);
-      const toRemove = idsArray.slice(0, Math.floor(idsArray.length / 2));
-      toRemove.forEach(id => this.seenPacketIds.delete(id));
-    }
-  }
 
   /**
    * Reset node state
@@ -189,8 +158,6 @@ export class VirtualNode {
     this.routingTable.clear();
     this.inbox = [];
     this.outbox = [];
-    this.transmitTime = 0;
-    this.simulationTime = 0;
 
     this.stats = {
       packetsReceived: 0,
